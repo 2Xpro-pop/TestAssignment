@@ -9,4 +9,6 @@ builder.AddProject<Projects.TestAssignment_Web>("webfrontend")
     .WithReference(apiService)
     .WaitFor(apiService);
 
+builder.AddProject<Projects.TestAssignment_IdentityApi>("testassignment-identityapi");
+
 builder.Build().Run();
