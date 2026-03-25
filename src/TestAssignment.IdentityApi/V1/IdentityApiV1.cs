@@ -27,7 +27,8 @@ public static class IdentityApi
             .WithName("Identity_Logout")
             .WithSummary("Revokes current access token.")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status401Unauthorized);
+            .Produces(StatusCodes.Status401Unauthorized)
+            .RequireAuthorization();
 
         return api;
     }

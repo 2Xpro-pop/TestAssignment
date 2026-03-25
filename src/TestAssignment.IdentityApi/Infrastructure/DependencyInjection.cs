@@ -4,6 +4,7 @@ using TestAssignment.IdentityApi.Application.Users;
 using TestAssignment.IdentityApi.Application.Users.Commands.Login;
 using TestAssignment.IdentityApi.Domain.Sesssions;
 using TestAssignment.IdentityApi.Domain.Users;
+using TestAssignment.IdentityApi.Infrastructure.Authentication;
 using TestAssignment.IdentityApi.Infrastructure.Messaging;
 using TestAssignment.IdentityApi.Infrastructure.Persistence;
 using TestAssignment.IdentityApi.Infrastructure.Users;
@@ -54,6 +55,19 @@ public static class DependencyInjection
                 typeof(LoginCommandHandler).Assembly,
                 typeof(DependencyInjection).Assembly);
         });
+
+        builder.Services
+            .AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = OpaqueTokenAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = OpaqueTokenAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultForbidScheme = OpaqueTokenAuthenticationDefaults.AuthenticationScheme;
+            })
+            .AddScheme<OpaqueTokenAuthenticationOptions, OpaqueTokenAuthenticationHandler>(
+                OpaqueTokenAuthenticationDefaults.AuthenticationScheme,
+                _ => { });
+
+        builder.Services.AddAuthorization();
 
         return builder;
     }
