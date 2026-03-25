@@ -1,15 +1,25 @@
-using System.Text.Json.Serialization;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Http.HttpResults;
+using System.Text.Json.Serialization;
 using TestAssignment.IdentityApi.Infrastructure;
+using TestAssignment.IdentityApi.V1;
 
-var builder = WebApplication.CreateSlimBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
 builder.AddIdentityInfrastructure(builder.Configuration);
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+var withApiVersioning = builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+});
+
+builder.Services.AddEndpointsApiExplorer();
+
 
 var app = builder.Build();
 
@@ -20,6 +30,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+var identity = app.NewVersionedApi("identity");
 
+identity.MapIdentityApiV1();
 
 app.Run();

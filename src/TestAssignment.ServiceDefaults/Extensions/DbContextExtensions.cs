@@ -11,4 +11,12 @@ public static class DbContextExtensions
         services.AddDbContext<TContext>(optionsAction);
         services.AddMigration<TContext>();
     }
+
+    public static void AddDefaultDbContext<TContext, TSeeder>(this IServiceCollection services, Action<DbContextOptionsBuilder> optionsAction)
+        where TContext : DbContext
+        where TSeeder : class, IDbSeeder<TContext>
+    {
+        services.AddDbContext<TContext>(optionsAction);
+        services.AddMigration<TContext, TSeeder>();
+    }
 }

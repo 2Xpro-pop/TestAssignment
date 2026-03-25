@@ -7,11 +7,12 @@
 		<InvariantGlobalization>true</InvariantGlobalization>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 		<DockerfileContext>..\..</DockerfileContext>
+		<InterceptorsNamespaces>$(InterceptorsNamespaces);Microsoft.AspNetCore.OpenApi.Generated</InterceptorsNamespaces>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="MediatR" />
-		<PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+		<PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design">
 			<PrivateAssets>all</PrivateAssets>
@@ -24,4 +25,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\TestAssignment.ServiceDefaults\TestAssignment.ServiceDefaults.csproj" />
 	</ItemGroup>
+	
+	
 </Project>

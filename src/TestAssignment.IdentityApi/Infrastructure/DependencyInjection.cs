@@ -22,7 +22,7 @@ public static class DependencyInjection
 
         builder.Services.AddScoped<DomainEventsDispatcher>();
 
-        builder.Services.AddDefaultDbContext<IdentityDbContext>(options =>
+        builder.Services.AddDefaultDbContext<IdentityDbContext, IdentityDbContextSeeder>(options =>
         {
             options.UseNpgsql(connectionString);
         });
@@ -50,4 +50,6 @@ public static class DependencyInjection
 
         return builder;
     }
+
+    
 }
