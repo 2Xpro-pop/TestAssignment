@@ -6,4 +6,6 @@ namespace TestAssignment.IdentityApi.Application.Users.Commands.Login;
 
 public sealed record LoginCommandResult(
     UserId UserId,
-    string Login);
+    string Login,
+    string AccessToken,
+    DateTimeOffset ExpiresAtUtc);

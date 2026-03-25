@@ -2,10 +2,12 @@
 using Microsoft.EntityFrameworkCore;
 using TestAssignment.IdentityApi.Application.Users;
 using TestAssignment.IdentityApi.Application.Users.Commands.Login;
+using TestAssignment.IdentityApi.Domain.Sesssions;
 using TestAssignment.IdentityApi.Domain.Users;
 using TestAssignment.IdentityApi.Infrastructure.Messaging;
 using TestAssignment.IdentityApi.Infrastructure.Persistence;
 using TestAssignment.IdentityApi.Infrastructure.Users;
+using TestAssignment.IdentityApi.Infrastructure.UserSessions;
 using TestAssignment.ServiceDefaults;
 using TestAssignment.ServiceDefaults.Extensions;
 
@@ -31,7 +33,12 @@ public static class DependencyInjection
             serviceProvider.GetRequiredService<IdentityDbContext>());
 
         builder.Services.AddScoped<IUserRepository, UserRepository>();
+        builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
+
         builder.Services.AddScoped<IPasswordHasher, PasswordHasherAdapter>();
+
+        builder.Services.AddSingleton<ITokenGenerator, TokenGenerator>();
+        builder.Services.AddSingleton<ITokenHasher, TokenHasher>();
 
         builder.Services.Configure<PasswordHasherOptions>(options =>
         {

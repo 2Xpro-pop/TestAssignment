@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Reflection.Emit;
+using TestAssignment.IdentityApi.Domain.Sesssions;
 using TestAssignment.IdentityApi.Domain.Users;
 using TestAssignment.IdentityApi.Infrastructure.Configurations;
 using TestAssignment.IdentityApi.Infrastructure.Messaging;
@@ -16,9 +17,13 @@ public sealed class IdentityDbContext(
 
     public DbSet<User> Users => Set<User>();
 
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        //modelBuilder.ApplyConfigurationsFromAssembly(typeof(IdentityDbContext).Assembly);
         modelBuilder.ApplyConfiguration(new UserConfiguration());
+        modelBuilder.ApplyConfiguration(new UserSessionConfiguration());
         base.OnModelCreating(modelBuilder);
     }
 
