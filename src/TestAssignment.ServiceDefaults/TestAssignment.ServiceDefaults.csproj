@@ -10,6 +10,7 @@
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 		<PackageReference Include="Asp.Versioning.Mvc.ApiExplorer"/>
+		<PackageReference Include="Scalar.AspNetCore"/>
 		<PackageReference Include="Ardalis.Result" />
 		<PackageReference Include="Ardalis.Result.AspNetCore" />
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" />

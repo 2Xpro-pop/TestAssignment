@@ -25,11 +25,6 @@ var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
 var identity = app.NewVersionedApi("identity");
 
 identity.MapIdentityApiV1();

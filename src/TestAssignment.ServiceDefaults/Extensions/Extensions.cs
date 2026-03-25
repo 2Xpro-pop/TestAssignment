@@ -7,6 +7,7 @@ using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using Scalar.AspNetCore;
 
 #pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace Microsoft.Extensions.Hosting;
@@ -122,6 +123,9 @@ public static class Extensions
             {
                 Predicate = r => r.Tags.Contains("live")
             });
+
+            app.MapOpenApi();
+            app.MapScalarApiReference();
         }
 
         return app;
