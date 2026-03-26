@@ -22,14 +22,14 @@ public sealed class IdentityDbContextSeeder(
 
         var users = new[]
         {
-                User.Create(
-                    login: new Login("test"),
-                    passwordHash: _passwordHasher.HashPassword("test123")),
+            User.Create(
+                login: new Login("test"),
+                passwordHash: _passwordHasher.HashPassword("test123")),
 
-                User.Create(
-                    login: new Login("admin"),
-                    passwordHash: _passwordHasher.HashPassword("admin123"))
-            };
+            User.Create(
+                login: new Login("admin"),
+                passwordHash: _passwordHasher.HashPassword("admin123"))
+        };
 
         await context.Users.AddRangeAsync(users);
         await context.SaveChangesAsync();

@@ -5,6 +5,7 @@
   <Project Path="src/TestAssignment.ApiService/TestAssignment.ApiService.csproj" />
   <Project Path="src/TestAssignment.AppHost/TestAssignment.AppHost.csproj" />
   <Project Path="src/TestAssignment.IdentityApi/TestAssignment.IdentityApi.csproj" />
+  <Project Path="src/TestAssignment.PaymentApi/TestAssignment.PaymentApi.csproj" />
   <Project Path="src/TestAssignment.ServiceDefaults/TestAssignment.ServiceDefaults.csproj" />
   <Project Path="src/TestAssignment.Tests/TestAssignment.Tests.csproj" />
   <Project Path="src/TestAssignment.Web/TestAssignment.Web.csproj" />

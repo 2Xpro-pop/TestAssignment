@@ -13,6 +13,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\TestAssignment.ApiService\TestAssignment.ApiService.csproj" />
 		<ProjectReference Include="..\TestAssignment.IdentityApi\TestAssignment.IdentityApi.csproj" />
+		<ProjectReference Include="..\TestAssignment.PaymentApi\TestAssignment.PaymentApi.csproj" />
 		<ProjectReference Include="..\TestAssignment.Web\TestAssignment.Web.csproj" />
 	</ItemGroup>
 
