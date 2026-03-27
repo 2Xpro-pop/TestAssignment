@@ -1,0 +1,98 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ master ]
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+env:
+  DOTNET_ENVIRONMENT: Production
+  ASPIRE_ENVIRONMENT: Production
+
+jobs:
+  deploy:
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore') && !startsWith(github.event.head_commit.message, 'docs') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install Aspire CLI
+        run: |
+          curl -sSL https://aspire.dev/install.sh | bash
+          echo "$HOME/.aspire/bin" >> $GITHUB_PATH
+
+      - name: Downcase repo
+        run: |
+          echo "REPO=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_TOKEN }}
+
+      - name: Deploy with Aspire
+        working-directory: src/TestAssignment.AppHost
+        env:
+          RepositoryUrl: https://github.com/${{ env.REPO }}
+          Parameters__registry-endpoint: ghcr.io
+          Parameters__registry-repository: ${{ env.REPO }}
+          Parameters__postgres-password: 123456
+        run: |
+          rm -rf aspire-output
+          aspire deploy --log-level debug
+
+          test -f aspire-output/docker-compose.yaml
+          test -f aspire-output/.env.Production
+
+      - name: Publish aspire-output to branch
+        run: |
+          varBranch="aspire-output"
+          varSourceDirectory="src/TestAssignment.AppHost/aspire-output"
+          varPublishDirectory="../aspire-output-branch"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin
+
+          if git ls-remote --exit-code --heads origin "$varBranch"; then
+            git worktree add "$varPublishDirectory" "origin/$varBranch"
+          else
+            git worktree add --detach "$varPublishDirectory"
+            cd "$varPublishDirectory"
+            git checkout --orphan "$varBranch"
+            git rm -rf . >/dev/null 2>&1 || true
+            cd -
+          fi
+
+          rsync -av --delete "$varSourceDirectory"/ "$varPublishDirectory"/
+
+          cd "$varPublishDirectory"
+
+          touch .nojekyll
+
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes in aspire-output"
+            exit 0
+          fi
+
+          git commit -m "Update aspire-output from ${GITHUB_SHA}"
+
+          git push origin HEAD:"$varBranch"
