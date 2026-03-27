@@ -1,0 +1,137 @@
+services:
+  compose-dashboard:
+    image: "mcr.microsoft.com/dotnet/nightly/aspire-dashboard:latest"
+    ports:
+      - "18888"
+    expose:
+      - "18889"
+      - "18890"
+    networks:
+      - "aspire"
+    restart: "always"
+  postgres:
+    image: "docker.io/library/postgres:17.6"
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: "scram-sha-256"
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    expose:
+      - "5432"
+    networks:
+      - "aspire"
+  yarp:
+    image: "mcr.microsoft.com/dotnet/nightly/yarp:2.3-preview"
+    command:
+      - "/app/yarp.dll"
+    entrypoint:
+      - "dotnet"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      TESTASSIGNMENT_IDENTITYAPI_HTTP: "http://testassignment-identityapi:${TESTASSIGNMENT_IDENTITYAPI_PORT}"
+      REVERSEPROXY__ROUTES__route0__MATCH__METHODS__0: "POST"
+      REVERSEPROXY__ROUTES__route0__MATCH__PATH: "/api/identity/login"
+      REVERSEPROXY__ROUTES__route0__CLUSTERID: "cluster_testassignment-identityapi"
+      REVERSEPROXY__ROUTES__route1__MATCH__METHODS__0: "POST"
+      REVERSEPROXY__ROUTES__route1__MATCH__PATH: "/api/identity/logout"
+      REVERSEPROXY__ROUTES__route1__CLUSTERID: "cluster_testassignment-identityapi"
+      REVERSEPROXY__ROUTES__route2__MATCH__METHODS__0: "POST"
+      REVERSEPROXY__ROUTES__route2__MATCH__PATH: "/api/payment"
+      REVERSEPROXY__ROUTES__route2__CLUSTERID: "cluster_testassignment-paymentapi"
+      REVERSEPROXY__ROUTES__route3__MATCH__METHODS__0: "GET"
+      REVERSEPROXY__ROUTES__route3__MATCH__PATH: "api/payment"
+      REVERSEPROXY__ROUTES__route3__CLUSTERID: "cluster_testassignment-paymentapi"
+      REVERSEPROXY__ROUTES__route4__MATCH__METHODS__0: "GET"
+      REVERSEPROXY__ROUTES__route4__MATCH__PATH: "api/payment/balance"
+      REVERSEPROXY__ROUTES__route4__CLUSTERID: "cluster_testassignment-paymentapi"
+      REVERSEPROXY__ROUTES__route5__MATCH__PATH: "/{**catch-all}"
+      REVERSEPROXY__ROUTES__route5__CLUSTERID: "cluster_webfrontend"
+      REVERSEPROXY__CLUSTERS__cluster_testassignment-identityapi__DESTINATIONS__destination1__ADDRESS: "https+http://testassignment-identityapi"
+      REVERSEPROXY__CLUSTERS__cluster_testassignment-paymentapi__DESTINATIONS__destination1__ADDRESS: "https+http://testassignment-paymentapi"
+      REVERSEPROXY__CLUSTERS__cluster_webfrontend__DESTINATIONS__destination1__ADDRESS: "https+http://webfrontend"
+      services__testassignment-identityapi__http__0: "http://testassignment-identityapi:${TESTASSIGNMENT_IDENTITYAPI_PORT}"
+      TESTASSIGNMENT_IDENTITYAPI_HTTPS: "https://testassignment-identityapi:${TESTASSIGNMENT_IDENTITYAPI_PORT}"
+      TESTASSIGNMENT_PAYMENTAPI_HTTP: "http://testassignment-paymentapi:${TESTASSIGNMENT_PAYMENTAPI_PORT}"
+      services__testassignment-paymentapi__http__0: "http://testassignment-paymentapi:${TESTASSIGNMENT_PAYMENTAPI_PORT}"
+      TESTASSIGNMENT_PAYMENTAPI_HTTPS: "https://testassignment-paymentapi:${TESTASSIGNMENT_PAYMENTAPI_PORT}"
+      WEBFRONTEND_HTTP: "http://webfrontend:${WEBFRONTEND_PORT}"
+      services__webfrontend__http__0: "http://webfrontend:${WEBFRONTEND_PORT}"
+      WEBFRONTEND_HTTPS: "https://webfrontend:${WEBFRONTEND_PORT}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://compose-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "yarp"
+    ports:
+      - "5000"
+    networks:
+      - "aspire"
+  testassignment-identityapi:
+    image: "${TESTASSIGNMENT_IDENTITYAPI_IMAGE}"
+    environment:
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: "in_memory"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: "${TESTASSIGNMENT_IDENTITYAPI_PORT}"
+      ConnectionStrings__identitydb: "Host=postgres;Port=5432;Username=postgres;Password=${POSTGRES_PASSWORD};Database=identitydb"
+      IDENTITYDB_HOST: "postgres"
+      IDENTITYDB_PORT: "5432"
+      IDENTITYDB_USERNAME: "postgres"
+      IDENTITYDB_PASSWORD: "${POSTGRES_PASSWORD}"
+      IDENTITYDB_URI: "postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/identitydb"
+      IDENTITYDB_JDBCCONNECTIONSTRING: "jdbc:postgresql://postgres:5432/identitydb"
+      IDENTITYDB_DATABASENAME: "identitydb"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://compose-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "testassignment-identityapi"
+    expose:
+      - "${TESTASSIGNMENT_IDENTITYAPI_PORT}"
+    depends_on:
+      postgres:
+        condition: "service_started"
+    networks:
+      - "aspire"
+  testassignment-paymentapi:
+    image: "${TESTASSIGNMENT_PAYMENTAPI_IMAGE}"
+    environment:
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: "in_memory"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: "${TESTASSIGNMENT_PAYMENTAPI_PORT}"
+      ConnectionStrings__paymentdb: "Host=postgres;Port=5432;Username=postgres;Password=${POSTGRES_PASSWORD};Database=paymentdb"
+      PAYMENTDB_HOST: "postgres"
+      PAYMENTDB_PORT: "5432"
+      PAYMENTDB_USERNAME: "postgres"
+      PAYMENTDB_PASSWORD: "${POSTGRES_PASSWORD}"
+      PAYMENTDB_URI: "postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/paymentdb"
+      PAYMENTDB_JDBCCONNECTIONSTRING: "jdbc:postgresql://postgres:5432/paymentdb"
+      PAYMENTDB_DATABASENAME: "paymentdb"
+      TESTASSIGNMENT_IDENTITYAPI_HTTP: "http://testassignment-identityapi:${TESTASSIGNMENT_IDENTITYAPI_PORT}"
+      services__testassignment-identityapi__http__0: "http://testassignment-identityapi:${TESTASSIGNMENT_IDENTITYAPI_PORT}"
+      TESTASSIGNMENT_IDENTITYAPI_HTTPS: "https://testassignment-identityapi:${TESTASSIGNMENT_IDENTITYAPI_PORT}"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://compose-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "testassignment-paymentapi"
+    expose:
+      - "${TESTASSIGNMENT_PAYMENTAPI_PORT}"
+    depends_on:
+      postgres:
+        condition: "service_started"
+      testassignment-identityapi:
+        condition: "service_started"
+    networks:
+      - "aspire"
+  webfrontend:
+    image: "${WEBFRONTEND_IMAGE}"
+    environment:
+      OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY: "in_memory"
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
+      HTTP_PORTS: "${WEBFRONTEND_PORT}"
+      YARP_HTTP: "http://yarp:5000"
+      services__yarp__http__0: "http://yarp:5000"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://compose-dashboard:18889"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+      OTEL_SERVICE_NAME: "webfrontend"
+    expose:
+      - "${WEBFRONTEND_PORT}"
+    networks:
+      - "aspire"
+networks:
+  aspire:
+    driver: "bridge"
