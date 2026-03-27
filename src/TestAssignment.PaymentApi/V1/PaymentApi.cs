@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TestAssignment.PaymentApi.Application.Payments.CreatePayment;
+using TestAssignment.PaymentApi.Application.Payments.GetBalance;
 using TestAssignment.PaymentApi.Application.Payments.GetPayments;
 using TestAssignment.PaymentApi.Domain.Accounts;
 using AspResult = Microsoft.AspNetCore.Http.IResult;
@@ -24,6 +25,13 @@ public static class PaymentApi
             .WithSummary("Returns all payments of the authenticated user.")
             .Produces<IReadOnlyList<GetPaymentsResponse>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized);
+
+        api.MapGet("/balance", GetBalanceAsync)
+            .WithName("Payment_GetBalance")
+            .WithSummary("Returns current balance of the authenticated user.")
+            .Produces<GetBalanceResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound);
 
         api.MapPost("/", CreatePaymentAsync)
             .WithName("Payment_Create")
@@ -64,6 +72,40 @@ public static class PaymentApi
             .ToList();
 
         return TypedResults.Ok(response);
+    }
+
+    private static async Task<AspResult> GetBalanceAsync(
+        ClaimsPrincipal claimsPrincipal,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        var ownerIdClaimValue =
+            claimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier) ??
+            claimsPrincipal.FindFirstValue("sub");
+
+        if (!Guid.TryParse(ownerIdClaimValue, out var ownerId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        try
+        {
+            var result = await sender.Send(
+                new GetBalanceQuery(ownerId),
+                cancellationToken);
+
+            return TypedResults.Ok(new GetBalanceResponse(
+                AccountId: result.AccountId,
+                BalanceMinorUnits: result.BalanceMinorUnits,
+                CurrencyCode: result.CurrencyCode));
+        }
+        catch (InvalidOperationException exception)
+        {
+            return TypedResults.NotFound(new
+            {
+                message = exception.Message
+            });
+        }
     }
 
     private static async Task<AspResult> CreatePaymentAsync(

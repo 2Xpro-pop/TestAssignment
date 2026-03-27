@@ -24,10 +24,10 @@ else
                     <h5 class="card-title">Account</h5>
                     <p class="card-text">Logged in as <strong>@Session.Login</strong></p>
 
-                    @if (lastPayment is not null)
+                    @if (balance is not null)
                     {
                         <p class="card-text">
-                            Balance: <strong>@FormatMoney(lastPayment.RemainingBalanceMinorUnits, lastPayment.CurrencyCode)</strong>
+                            Balance: <strong>@FormatMoney(balance.BalanceMinorUnits, balance.CurrencyCode)</strong>
                         </p>
                     }
 
@@ -96,7 +96,7 @@ else
 
 @code {
     private readonly List<PaymentItemDto> paymentHistory = [];
-    private PaymentResponseDto? lastPayment;
+    private BalanceDto? balance;
     private string? errorMessage;
     private string? successMessage;
     private bool isLoading;
@@ -112,8 +112,31 @@ else
 
         if (firstRender)
         {
+            await LoadBalanceAsync();
             await LoadPaymentHistoryAsync();
             StateHasChanged();
+        }
+    }
+
+    private async Task LoadBalanceAsync()
+    {
+        try
+        {
+            var result = await PaymentApi.GetBalanceAsync(Session.AccessToken!);
+
+            if (result.IsSuccess)
+            {
+                balance = result.Balance;
+            }
+            else if (result.ErrorMessage?.Contains("Session expired") == true)
+            {
+                Session.Clear();
+                Navigation.NavigateTo("/login");
+            }
+        }
+        catch
+        {
+            // Silently fail; balance will remain null
         }
     }
 
@@ -164,9 +187,12 @@ else
 
             if (result.IsSuccess)
             {
-                lastPayment = result.Payment;
+                balance = new BalanceDto(
+                    AccountId: result.Payment!.AccountId,
+                    BalanceMinorUnits: result.Payment.RemainingBalanceMinorUnits,
+                    CurrencyCode: result.Payment.CurrencyCode);
                 paymentHistory.Insert(0, new PaymentItemDto(
-                    PaymentId: result.Payment!.PaymentId,
+                    PaymentId: result.Payment.PaymentId,
                     AccountId: result.Payment.AccountId,
                     AmountMinorUnits: result.Payment.DebitedMinorUnits,
                     CurrencyCode: result.Payment.CurrencyCode,

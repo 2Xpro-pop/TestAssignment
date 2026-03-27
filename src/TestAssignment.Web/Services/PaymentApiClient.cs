@@ -58,7 +58,44 @@ public sealed class PaymentApiClient(HttpClient httpClient)
         return GetPaymentsResult.Failure("Failed to load payments.");
     }
 
+    public async Task<GetBalanceResult> GetBalanceAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/payment/balance");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadFromJsonAsync<BalanceDto>(cancellationToken);
+            return GetBalanceResult.Success(body!);
+        }
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            return GetBalanceResult.Failure("Session expired. Please log in again.");
+        }
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return GetBalanceResult.Failure("Account not found.");
+        }
+
+        return GetBalanceResult.Failure("Failed to load balance.");
+    }
+
     private sealed record ErrorDto(string? Message);
+}
+
+public sealed record BalanceDto(
+    Guid AccountId,
+    long BalanceMinorUnits,
+    string CurrencyCode);
+
+public sealed record GetBalanceResult(bool IsSuccess, string? ErrorMessage, BalanceDto? Balance)
+{
+    public static GetBalanceResult Success(BalanceDto balance) => new(true, null, balance);
+    public static GetBalanceResult Failure(string errorMessage) => new(false, errorMessage, null);
 }
 
 public sealed record PaymentItemDto(
