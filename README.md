@@ -1,0 +1,62 @@
+# Тестовое задание
+
+## Если у вас есть aspire 
+Если у вас есть aspire можете просто запустить проект, все необходимые зависимости загрузит сам aspire при условии что у вас есть Docker Desktop, и он запущен.
+
+## Если у вас нет aspire
+Если у вас нет aspire то вам нужно зайти в ветку [aspire-ouput](https://github.com/2Xpro-pop/TestAssignment/tree/aspire-output) и загрузить `.env.Production` и `docker-compose.yaml`
+
+### Затем нужно загрузить пакейджы 
+
+```bash
+docker compose --env-file .env.Production -f docker-compose.yaml pull
+```
+
+Ну и поднять пайкеджы
+
+```bash
+docker compose --env-file .env.Production -f docker-compose.yaml up -d --remove-orphans
+```
+
+## Все роуты
+- [V1/IdentityApi](https://github.com/2Xpro-pop/TestAssignment/blob/cd45991c992160d029a234f755919bf7a8929829/src/TestAssignment.IdentityApi/V1/IdentityApiV1.cs#L13) - логин, logout, выдача/инвалидация токенов
+- [V1/PaymentApi](https://github.com/2Xpro-pop/TestAssignment/blob/cd45991c992160d029a234f755919bf7a8929829/src/TestAssignment.PaymentApi/V1/PaymentApi.cs#L16) - списание `1.1 USD`, хранение платежей, баланс
+- [Yarp](https://github.com/2Xpro-pop/TestAssignment/blob/cd45991c992160d029a234f755919bf7a8929829/src/TestAssignment.AppHost/YarpExtensions.cs#L22) - единая точка входа
+
+## Тестовые пользователи
+
+Все тестовые пользователи находятся в [IdentityDbContextSeeder](https://github.com/2Xpro-pop/TestAssignment/blob/cd45991c992160d029a234f755919bf7a8929829/src/TestAssignment.IdentityApi/Infrastructure/Persistence/IdentityDbContextSeeder.cs#L9)
+
+| Login | Password |
+|-------|----------|
+| test  | test123  |
+| admin | admin123 |
+
+## ТЗ
+```
+Сделать API с возможностью авторизации пользователя и совершения платежа только после успешной авторизации. 
+Должны быть 3 endpoint'а: login (вводим логин и пароль, при успехе выдает токен), logout (делает токен недействительным) 
+и payment (при добавлении пользователя в БД ставим баланс 8 USD, сама операция позволяет снимать с баланса пользователя 1.1 USD при каждом вызове, 
+все совершенные платежи хранятся в БД). Сделанный проект надо выгрузить в репозиторий на Github. 
+
+Требования к функционалу (авторизация):
+- если логин/пароль неправильные - выводим ошибку
+- одновременная поддержка нескольких сессий пользователя
+- не хранить пароли в базе в открытом виде
+- защита от брутфорса (подбора пароля)
+
+Требования к функционалу (платеж):
+- защита от ошибочных списаний (изоляция транзакций)
+- отсутствие ошибок округления
+- корректное хранение и операции с финансовыми данными
+
+Требования к коду:
+- конкретный стек (фреймворки и библиотеки) не принципиален
+- простая реализация логики и БД
+
+Требования к выполнению задания:
+Проект должен быть упакован в Docker (предоставить Dockerfile).
+Подготовить docker-compose.yml, который запускает:
+сам проект;
+все необходимые зависимости (например: база данных)
+```
