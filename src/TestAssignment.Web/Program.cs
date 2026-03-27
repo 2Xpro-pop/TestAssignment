@@ -42,7 +42,10 @@ app.UseOutputCache();
 app.MapStaticAssets();
 
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode(options =>
+    {
+
+    });
 
 app.MapDefaultEndpoints();
 
