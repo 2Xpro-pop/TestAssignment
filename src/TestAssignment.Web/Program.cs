@@ -1,5 +1,5 @@
-using TestAssignment.Web;
 using TestAssignment.Web.Components;
+using TestAssignment.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,12 +12,17 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddOutputCache();
 
-builder.Services.AddHttpClient<WeatherApiClient>(client =>
-    {
-        // This URL uses "https+http://" to indicate HTTPS is preferred over HTTP.
-        // Learn more about service discovery scheme resolution at https://aka.ms/dotnet/sdschemes.
-        client.BaseAddress = new("https+http://apiservice");
-    });
+builder.Services.AddScoped<SessionState>();
+
+builder.Services.AddHttpClient<IdentityApiClient>(client =>
+{
+    client.BaseAddress = new("https+http://testassignment-identityapi");
+});
+
+builder.Services.AddHttpClient<PaymentApiClient>(client =>
+{
+    client.BaseAddress = new("https+http://testassignment-paymentapi");
+});
 
 var app = builder.Build();
 
@@ -37,7 +42,10 @@ app.UseOutputCache();
 app.MapStaticAssets();
 
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode(options =>
+    {
+
+    });
 
 app.MapDefaultEndpoints();
 

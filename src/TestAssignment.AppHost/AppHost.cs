@@ -17,9 +17,6 @@ var yarp = builder.AddYarp("yarp");
 var identityDb = postgres.AddDatabase("identitydb");
 var paymentDb = postgres.AddDatabase("paymentdb");
 
-var webfrontend = builder.AddProject<Projects.TestAssignment_Web>("webfrontend")
-    .WithHttpHealthCheck("/health");
-
 var identityApi = builder.AddProject<Projects.TestAssignment_IdentityApi>("testassignment-identityapi")
     .WithReference(identityDb).WaitFor(identityDb)
     .WithHttpHealthCheck("/health");
@@ -31,7 +28,12 @@ var paymentApi = builder.AddProject<Projects.TestAssignment_PaymentApi>("testass
     .WaitFor(identityApi)
     .WithHttpHealthCheck("/health");
 
-yarp.ConfigureTestAssignmentRoutes(identityApi, paymentApi, webfrontend)
+var webfrontend = builder.AddProject<Projects.TestAssignment_Web>("webfrontend")
+    .WithReference(identityApi).WaitFor(identityApi)
+    .WithReference(paymentApi).WaitFor(paymentApi)
+    .WithHttpHealthCheck("/health");
+
+yarp.ConfigureTestAssignmentRoutes(identityApi: identityApi, paymentApi: paymentApi, webFrontend: webfrontend)
     .WithExternalHttpEndpoints();
 
 builder.Build().Run();

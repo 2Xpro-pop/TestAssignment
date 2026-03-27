@@ -1,0 +1,103 @@
+@page "/login"
+@rendermode InteractiveServer
+@using TestAssignment.Web.Services
+@inject IdentityApiClient IdentityApi
+@inject SessionState Session
+@inject NavigationManager Navigation
+
+<PageTitle>Login</PageTitle>
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <h3 class="mb-4">Login</h3>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">@errorMessage</div>
+        }
+
+        <EditForm Model="model" OnValidSubmit="HandleLogin" FormName="login">
+            <DataAnnotationsValidator />
+
+            <div class="mb-3">
+                <label for="login" class="form-label">Login</label>
+                <InputText id="login" class="form-control" @bind-Value="model.Login" disabled="@isLoading" />
+                <ValidationMessage For="() => model.Login" />
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <InputText id="password" type="password" class="form-control" @bind-Value="model.Password" disabled="@isLoading" />
+                <ValidationMessage For="() => model.Password" />
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    <text>Logging in…</text>
+                }
+                else
+                {
+                    <text>Login</text>
+                }
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private LoginModel model = new();
+    private string? errorMessage;
+    private bool isLoading;
+
+    protected override void OnInitialized()
+    {
+        if (Session.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/payment");
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(model.Login) || string.IsNullOrWhiteSpace(model.Password))
+        {
+            errorMessage = "Login and password are required.";
+            return;
+        }
+
+        isLoading = true;
+
+        try
+        {
+            var result = await IdentityApi.LoginAsync(model.Login, model.Password);
+
+            if (result.IsSuccess)
+            {
+                Session.SetSession(result.AccessToken!, result.Login!, result.ExpiresAtUtc!.Value);
+                Navigation.NavigateTo("/payment");
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage;
+            }
+        }
+        catch
+        {
+            errorMessage = "An unexpected error occurred. Please try again.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private sealed class LoginModel
+    {
+        public string Login { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

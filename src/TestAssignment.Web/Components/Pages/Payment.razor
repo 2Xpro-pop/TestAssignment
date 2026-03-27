@@ -1,0 +1,156 @@
+@page "/payment"
+@rendermode InteractiveServer
+@using TestAssignment.Web.Services
+@inject PaymentApiClient PaymentApi
+@inject SessionState Session
+@inject NavigationManager Navigation
+
+<PageTitle>Payment</PageTitle>
+
+<h3 class="mb-4">Payment</h3>
+
+@if (!Session.IsAuthenticated)
+{
+    <div class="alert alert-warning">
+        Please <a href="/login">log in</a> to make a payment.
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Account</h5>
+                    <p class="card-text">Logged in as <strong>@Session.Login</strong></p>
+
+                    @if (lastPayment is not null)
+                    {
+                        <p class="card-text">
+                            Balance: <strong>@FormatMoney(lastPayment.RemainingBalanceMinorUnits, lastPayment.CurrencyCode)</strong>
+                        </p>
+                    }
+
+                    <button class="btn btn-success" @onclick="MakePayment" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            <text>Processing…</text>
+                        }
+                        else
+                        {
+                            <text>Pay $1.10</text>
+                        }
+                    </button>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">@errorMessage</div>
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success" role="alert">@successMessage</div>
+            }
+        </div>
+
+        <div class="col-md-6">
+            @if (payments.Count > 0)
+            {
+                <h5>Payment History</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Amount</th>
+                                <th>Balance After</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var (p, i) in payments.Select((p, i) => (p, i)))
+                            {
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td>@FormatMoney(p.DebitedMinorUnits, p.CurrencyCode)</td>
+                                    <td>@FormatMoney(p.RemainingBalanceMinorUnits, p.CurrencyCode)</td>
+                                    <td>@p.CreatedAtUtc.LocalDateTime.ToString("g")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private readonly List<PaymentResponseDto> payments = [];
+    private PaymentResponseDto? lastPayment;
+    private string? errorMessage;
+    private string? successMessage;
+    private bool isLoading;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!Session.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private async Task MakePayment()
+    {
+        if (!Session.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        errorMessage = null;
+        successMessage = null;
+        isLoading = true;
+
+        try
+        {
+            var result = await PaymentApi.CreatePaymentAsync(Session.AccessToken!);
+
+            if (result.IsSuccess)
+            {
+                lastPayment = result.Payment;
+                payments.Insert(0, result.Payment!);
+                successMessage = $"Payment successful! Debited {FormatMoney(result.Payment!.DebitedMinorUnits, result.Payment.CurrencyCode)}.";
+            }
+            else
+            {
+                errorMessage = result.ErrorMessage;
+
+                if (result.ErrorMessage?.Contains("Session expired") == true)
+                {
+                    Session.Clear();
+                    Navigation.NavigateTo("/login");
+                }
+            }
+        }
+        catch
+        {
+            errorMessage = "An unexpected error occurred. Please try again.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static string FormatMoney(long minorUnits, string currencyCode)
+    {
+        var amount = minorUnits / 100m;
+        return currencyCode.Equals("USD", StringComparison.OrdinalIgnoreCase)
+            ? $"${amount:F2}"
+            : $"{amount:F2} {currencyCode}";
+    }
+}
