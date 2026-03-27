@@ -80,7 +80,7 @@ jobs:
             cd -
           fi
 
-          rsync -av --delete "$varSourceDirectory"/ "$varPublishDirectory"/
+          rsync -av --delete --exclude='.git' "$varSourceDirectory"/ "$varPublishDirectory"/
 
           cd "$varPublishDirectory"
 
