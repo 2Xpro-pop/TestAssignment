@@ -28,6 +28,9 @@ public static class YarpExtensions
             yarp.AddRoute("/api/payment", paymentCluster)
                 .WithMatchMethods("POST");
 
+            yarp.AddRoute("api/payment", paymentCluster)
+                .WithMatchMethods("GET");
+
             yarp.AddRoute("/{**catch-all}", webFrontendCluster);
         });
     }

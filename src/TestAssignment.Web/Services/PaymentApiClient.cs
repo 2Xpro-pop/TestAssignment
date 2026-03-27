@@ -37,7 +37,41 @@ public sealed class PaymentApiClient(HttpClient httpClient)
         return PaymentResult.Failure("Payment failed. Please try again.");
     }
 
+    public async Task<GetPaymentsResult> GetPaymentsAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/payment");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var items = await response.Content.ReadFromJsonAsync<List<PaymentItemDto>>(cancellationToken);
+            return GetPaymentsResult.Success(items ?? []);
+        }
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            return GetPaymentsResult.Failure("Session expired. Please log in again.");
+        }
+
+        return GetPaymentsResult.Failure("Failed to load payments.");
+    }
+
     private sealed record ErrorDto(string? Message);
+}
+
+public sealed record PaymentItemDto(
+    Guid PaymentId,
+    Guid AccountId,
+    long AmountMinorUnits,
+    string CurrencyCode,
+    DateTimeOffset CreatedAtUtc);
+
+public sealed record GetPaymentsResult(bool IsSuccess, string? ErrorMessage, IReadOnlyList<PaymentItemDto>? Payments)
+{
+    public static GetPaymentsResult Success(IReadOnlyList<PaymentItemDto> payments) => new(true, null, payments);
+    public static GetPaymentsResult Failure(string errorMessage) => new(false, errorMessage, null);
 }
 
 public sealed record PaymentResponseDto(

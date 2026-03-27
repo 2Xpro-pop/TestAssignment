@@ -1,8 +1,9 @@
-﻿using System.Security.Claims;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
+﻿using MediatR;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TestAssignment.PaymentApi.Application.Payments.CreatePayment;
+using TestAssignment.PaymentApi.Application.Payments.GetPayments;
 using TestAssignment.PaymentApi.Domain.Accounts;
 using AspResult = Microsoft.AspNetCore.Http.IResult;
 
@@ -18,6 +19,12 @@ public static class PaymentApi
             .WithTags("Payment")
             .RequireAuthorization();
 
+        api.MapGet("/", GetPaymentsAsync)
+            .WithName("Payment_GetAll")
+            .WithSummary("Returns all payments of the authenticated user.")
+            .Produces<IReadOnlyList<GetPaymentsResponse>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized);
+
         api.MapPost("/", CreatePaymentAsync)
             .WithName("Payment_Create")
             .WithSummary("Creates a payment and debits 1.10 USD from the authenticated user's account.")
@@ -27,6 +34,36 @@ public static class PaymentApi
             .Produces(StatusCodes.Status409Conflict);
 
         return api;
+    }
+
+    private static async Task<AspResult> GetPaymentsAsync(
+        ClaimsPrincipal claimsPrincipal,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        var ownerIdClaimValue =
+            claimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier) ??
+            claimsPrincipal.FindFirstValue("sub");
+
+        if (!Guid.TryParse(ownerIdClaimValue, out var ownerId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        var result = await sender.Send(
+            new GetPaymentsQuery(ownerId),
+            cancellationToken);
+
+        var response = result
+            .Select(payment => new GetPaymentsResponse(
+                PaymentId: payment.PaymentId,
+                AccountId: payment.AccountId,
+                AmountMinorUnits: payment.AmountMinorUnits,
+                CurrencyCode: payment.CurrencyCode,
+                CreatedAtUtc: payment.CreatedAtUtc))
+            .ToList();
+
+        return TypedResults.Ok(response);
     }
 
     private static async Task<AspResult> CreatePaymentAsync(

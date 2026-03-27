@@ -29,8 +29,7 @@ var paymentApi = builder.AddProject<Projects.TestAssignment_PaymentApi>("testass
     .WithHttpHealthCheck("/health");
 
 var webfrontend = builder.AddProject<Projects.TestAssignment_Web>("webfrontend")
-    .WithReference(identityApi).WaitFor(identityApi)
-    .WithReference(paymentApi).WaitFor(paymentApi)
+    .WithReference(yarp)
     .WithHttpHealthCheck("/health");
 
 yarp.ConfigureTestAssignmentRoutes(identityApi: identityApi, paymentApi: paymentApi, webFrontend: webfrontend)

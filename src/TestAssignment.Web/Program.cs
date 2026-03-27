@@ -16,12 +16,12 @@ builder.Services.AddScoped<SessionState>();
 
 builder.Services.AddHttpClient<IdentityApiClient>(client =>
 {
-    client.BaseAddress = new("https+http://testassignment-identityapi");
+    client.BaseAddress = new("https+http://yarp");
 });
 
 builder.Services.AddHttpClient<PaymentApiClient>(client =>
 {
-    client.BaseAddress = new("https+http://testassignment-paymentapi");
+    client.BaseAddress = new("https+http://yarp");
 });
 
 var app = builder.Build();
@@ -42,10 +42,7 @@ app.UseOutputCache();
 app.MapStaticAssets();
 
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode(options =>
-    {
-
-    });
+    .AddInteractiveServerRenderMode();
 
 app.MapDefaultEndpoints();
 

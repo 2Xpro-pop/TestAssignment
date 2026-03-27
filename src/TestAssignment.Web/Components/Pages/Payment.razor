@@ -57,7 +57,11 @@ else
         </div>
 
         <div class="col-md-6">
-            @if (payments.Count > 0)
+            @if (isLoadingHistory)
+            {
+                <p><em>Loading payment history…</em></p>
+            }
+            else if (paymentHistory.Count > 0)
             {
                 <h5>Payment History</h5>
                 <div class="table-responsive">
@@ -66,17 +70,15 @@ else
                             <tr>
                                 <th>#</th>
                                 <th>Amount</th>
-                                <th>Balance After</th>
                                 <th>Date</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var (p, i) in payments.Select((p, i) => (p, i)))
+                            @foreach (var (p, i) in paymentHistory.Select((p, i) => (p, i)))
                             {
                                 <tr>
                                     <td>@(i + 1)</td>
-                                    <td>@FormatMoney(p.DebitedMinorUnits, p.CurrencyCode)</td>
-                                    <td>@FormatMoney(p.RemainingBalanceMinorUnits, p.CurrencyCode)</td>
+                                    <td>@FormatMoney(p.AmountMinorUnits, p.CurrencyCode)</td>
                                     <td>@p.CreatedAtUtc.LocalDateTime.ToString("g")</td>
                                 </tr>
                             }
@@ -84,22 +86,63 @@ else
                     </table>
                 </div>
             }
+            else
+            {
+                <p>No payments yet.</p>
+            }
         </div>
     </div>
 }
 
 @code {
-    private readonly List<PaymentResponseDto> payments = [];
+    private readonly List<PaymentItemDto> paymentHistory = [];
     private PaymentResponseDto? lastPayment;
     private string? errorMessage;
     private string? successMessage;
     private bool isLoading;
+    private bool isLoadingHistory;
 
-    protected override void OnAfterRender(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!Session.IsAuthenticated)
         {
             Navigation.NavigateTo("/login");
+            return;
+        }
+
+        if (firstRender)
+        {
+            await LoadPaymentHistoryAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadPaymentHistoryAsync()
+    {
+        isLoadingHistory = true;
+
+        try
+        {
+            var result = await PaymentApi.GetPaymentsAsync(Session.AccessToken!);
+
+            if (result.IsSuccess)
+            {
+                paymentHistory.Clear();
+                paymentHistory.AddRange(result.Payments!);
+            }
+            else if (result.ErrorMessage?.Contains("Session expired") == true)
+            {
+                Session.Clear();
+                Navigation.NavigateTo("/login");
+            }
+        }
+        catch
+        {
+            // Silently fail; user can still make payments
+        }
+        finally
+        {
+            isLoadingHistory = false;
         }
     }
 
@@ -122,8 +165,13 @@ else
             if (result.IsSuccess)
             {
                 lastPayment = result.Payment;
-                payments.Insert(0, result.Payment!);
-                successMessage = $"Payment successful! Debited {FormatMoney(result.Payment!.DebitedMinorUnits, result.Payment.CurrencyCode)}.";
+                paymentHistory.Insert(0, new PaymentItemDto(
+                    PaymentId: result.Payment!.PaymentId,
+                    AccountId: result.Payment.AccountId,
+                    AmountMinorUnits: result.Payment.DebitedMinorUnits,
+                    CurrencyCode: result.Payment.CurrencyCode,
+                    CreatedAtUtc: result.Payment.CreatedAtUtc));
+                successMessage = $"Payment successful! Debited {FormatMoney(result.Payment.DebitedMinorUnits, result.Payment.CurrencyCode)}.";
             }
             else
             {
