@@ -40,6 +40,20 @@ public sealed class User: AggregateRoot<UserId>
                 lockoutEndUtc: null));
     }
 
+    internal static User Rehydration(
+        UserId id,
+        Login login,
+        PasswordHash passwordHash,
+        LockoutState lockoutState)
+    {
+        return new User(
+            id,
+            login,
+            passwordHash,
+            lockoutState
+        );
+    }
+
     public bool CanLogin(DateTimeOffset nowUtc)
     {
         return LockoutState.CanLogin(nowUtc);

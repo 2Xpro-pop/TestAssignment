@@ -16,13 +16,15 @@ builder.AddProject<Projects.TestAssignment_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health");
 
-builder.AddProject<Projects.TestAssignment_IdentityApi>("testassignment-identityapi")
+var identityApi = builder.AddProject<Projects.TestAssignment_IdentityApi>("testassignment-identityapi")
     .WithReference(identityDb).WaitFor(identityDb)
     .WithHttpHealthCheck("/health");
 
 builder.AddProject<Projects.TestAssignment_PaymentApi>("testassignment-paymentapi")
     .WithReference(paymentDb)
     .WaitFor(paymentDb)
+    .WithReference(identityApi)
+    .WaitFor(identityApi)
     .WithHttpHealthCheck("/health");
 
 builder.Build().Run();

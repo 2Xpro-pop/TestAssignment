@@ -1,9 +1,10 @@
 ﻿using Ardalis.Result;
 using MediatR;
 using Microsoft.Net.Http.Headers;
+using TestAssignment.IdentityApi.Application.IntrospectAccessToken;
 using TestAssignment.IdentityApi.Application.Users.Commands.Login;
 using TestAssignment.IdentityApi.Application.Users.Commands.Logout;
-using AspResutl = Microsoft.AspNetCore.Http.IResult;
+using AspResult = Microsoft.AspNetCore.Http.IResult;
 
 namespace TestAssignment.IdentityApi.V1;
 
@@ -30,10 +31,16 @@ public static class IdentityApi
             .Produces(StatusCodes.Status401Unauthorized)
             .RequireAuthorization();
 
+        api.MapPost("/internal/introspect", IntrospectAsync)
+            .WithName("Identity_Introspect")
+            .WithSummary("Validates an access token for internal services.")
+            .Produces<IntrospectTokenResponse>(StatusCodes.Status200OK);
+
+
         return api;
     }
 
-    private static async Task<AspResutl> LoginAsync(
+    private static async Task<AspResult> LoginAsync(
         LoginRequest request,
         ISender sender,
         CancellationToken cancellationToken)
@@ -89,7 +96,7 @@ public static class IdentityApi
         };
     }
 
-    private static async Task<AspResutl> LogoutAsync(
+    private static async Task<AspResult> LogoutAsync(
         HttpContext httpContext,
         ISender sender,
         CancellationToken cancellationToken)
@@ -112,6 +119,21 @@ public static class IdentityApi
                 statusCode: StatusCodes.Status500InternalServerError,
                 title: "Unexpected identity error.")
         };
+    }
+
+    private static async Task<AspResult> IntrospectAsync(
+        IntrospectTokenRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(
+            new IntrospectAccessTokenCommand(request.AccessToken),
+            cancellationToken);
+
+        return TypedResults.Ok(new IntrospectTokenResponse(
+            IsActive: result.IsActive,
+            UserId: result.UserId,
+            Login: result.Login));
     }
 
     private static string? TryReadBearerToken(HttpRequest request)

@@ -1,8 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using TestAssignment.IdentityApi.Infrastructure.Persistence;
 
-namespace TestAssignment.IdentityApi.Infrastructure;
+namespace TestAssignment.IdentityApi.Infrastructure.Persistence;
 
 public sealed class IdentityDbContextFactory : IDesignTimeDbContextFactory<IdentityDbContext>
 {

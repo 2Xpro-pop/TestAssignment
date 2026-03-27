@@ -30,8 +30,7 @@ public sealed class CreatePaymentCommandHandler(
 
         if (account is null)
         {
-            account = Account.Create(ownerId);
-            await _accountRepository.AddAsync(account, cancellationToken);
+            throw new InvalidOperationException("Payment account was not provisioned for the user.");
         }
 
         account.Debit(PaymentAmount);

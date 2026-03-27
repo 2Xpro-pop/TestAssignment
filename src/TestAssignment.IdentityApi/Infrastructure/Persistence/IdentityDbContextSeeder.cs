@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TestAssignment.IdentityApi.Application.Users;
 using TestAssignment.IdentityApi.Domain.Users;
+using TestAssignment.ServiceDefaults;
 using TestAssignment.ServiceDefaults.Extensions;
 
 namespace TestAssignment.IdentityApi.Infrastructure.Persistence;
@@ -22,13 +23,17 @@ public sealed class IdentityDbContextSeeder(
 
         var users = new[]
         {
-            User.Create(
+            User.Rehydration(
+                id: new UserId(SeedUsers.TestUserId),
                 login: new Login("test"),
-                passwordHash: _passwordHasher.HashPassword("test123")),
+                passwordHash: _passwordHasher.HashPassword("test123"),
+                lockoutState: default),
 
-            User.Create(
+            User.Rehydration(
+                id: new UserId(SeedUsers.AdminUserId),
                 login: new Login("admin"),
-                passwordHash: _passwordHasher.HashPassword("admin123"))
+                passwordHash: _passwordHasher.HashPassword("admin123"),
+                lockoutState: default)
         };
 
         await context.Users.AddRangeAsync(users);
